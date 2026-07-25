@@ -32,7 +32,13 @@ cp .env.example .env.local
 4. Callback path used by the app: `{APP_URL}/api/strava/callback`
 5. Optional webhook: `{APP_URL}/api/strava/webhook` with verify token `STRAVA_VERIFY_TOKEN`
 
-### 4. Run
+### 4. Auto sync (Vercel Cron)
+
+Production runs `/api/cron/strava-sync` every 6 hours for all connected accounts. Set a random `CRON_SECRET` in the Vercel project env (Vercel sends it as `Authorization: Bearer …`). Manual Sync on the site still works anytime.
+
+Hobby plans only allow one daily cron — change the schedule in `vercel.json` to e.g. `"0 12 * * *"` if needed.
+
+### 5. Run
 
 ```bash
 npm run dev

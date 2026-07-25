@@ -265,6 +265,72 @@ export async function syncUserFromStrava(userId: string): Promise<{ upserted: nu
   return upsertActivitiesForUser(userId, activities);
 }
 
+const CRON_MIN_GAP_MS = 30 * 60 * 1000; // skip if synced in the last 30 minutes
+const CRON_USER_DELAY_MS = 250;
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+export async function syncAllConnectedUsers(): Promise<{
+  synced: number;
+  skipped: number;
+  failed: number;
+  errors: { userId: string; message: string }[];
+}> {
+  const admin = createAdminClient();
+  const { data: tokens, error } = await admin
+    .from("strava_tokens")
+    .select("user_id");
+
+  if (error) throw error;
+
+  const result = {
+    synced: 0,
+    skipped: 0,
+    failed: 0,
+    errors: [] as { userId: string; message: string }[],
+  };
+
+  const userIds = (tokens || []).map((t) => t.user_id);
+  if (!userIds.length) return result;
+
+  const { data: profiles } = await admin
+    .from("profiles")
+    .select("id, last_synced_at")
+    .in("id", userIds);
+
+  const lastSynced = new Map(
+    (profiles || []).map((p) => [p.id, p.last_synced_at as string | null]),
+  );
+
+  for (let i = 0; i < userIds.length; i++) {
+    const userId = userIds[i];
+    const syncedAt = lastSynced.get(userId);
+    if (syncedAt && Date.now() - new Date(syncedAt).getTime() < CRON_MIN_GAP_MS) {
+      result.skipped++;
+      continue;
+    }
+
+    try {
+      await syncUserFromStrava(userId);
+      result.synced++;
+    } catch (e) {
+      result.failed++;
+      result.errors.push({
+        userId,
+        message: e instanceof Error ? e.message : "Sync failed",
+      });
+    }
+
+    if (i < userIds.length - 1) {
+      await sleep(CRON_USER_DELAY_MS);
+    }
+  }
+
+  return result;
+}
+
 export async function saveStravaConnection(
   userId: string,
   tokens: StravaTokens,
