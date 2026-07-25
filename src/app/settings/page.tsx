@@ -122,14 +122,21 @@ export default async function SettingsPage({
         <form action={deleteAccount} className="mt-4 space-y-3">
           <label className="block space-y-2 text-sm">
             <span className="text-[var(--muted)]">
-              Type DELETE to confirm
+              Type <span className="font-semibold text-red-200">DELETE</span>{" "}
+              below to confirm
             </span>
             <input
-              className="field"
+              className="field border-red-500/40 bg-[var(--surface-2)] tracking-[0.2em]"
+              type="text"
               name="confirm"
               autoComplete="off"
+              autoCapitalize="characters"
+              spellCheck={false}
               required
+              pattern="DELETE"
+              title="Type DELETE in all caps"
               placeholder="DELETE"
+              aria-label="Type DELETE to confirm account deletion"
             />
           </label>
           <label className="block space-y-2 text-sm">

@@ -107,7 +107,9 @@ export async function deleteAccount(formData: FormData) {
 
   if (confirm !== "DELETE") {
     redirect(
-      `/settings?error=${encodeURIComponent('Type DELETE to confirm account deletion')}`,
+      `/settings?error=${encodeURIComponent(
+        "Enter DELETE (all caps) in the confirmation box, then your password",
+      )}`,
     );
   }
 
