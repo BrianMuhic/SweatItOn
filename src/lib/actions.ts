@@ -46,8 +46,14 @@ export async function updateDisplayName(formData: FormData) {
 }
 
 export async function updateEmail(formData: FormData) {
-  const email = String(formData.get("email") || "").trim().toLowerCase();
-  const password = String(formData.get("password") || "");
+  const email = String(
+    formData.get("new_email") || formData.get("email") || "",
+  )
+    .trim()
+    .toLowerCase();
+  const password = String(
+    formData.get("account_password") || formData.get("password") || "",
+  );
 
   const supabase = await createClient();
   const {
@@ -96,7 +102,9 @@ export async function updateEmail(formData: FormData) {
 }
 
 export async function deleteAccount(formData: FormData) {
-  const password = String(formData.get("password") || "");
+  const password = String(
+    formData.get("account_password") || formData.get("password") || "",
+  );
   const confirm = String(formData.get("confirm") || "").trim();
 
   const supabase = await createClient();

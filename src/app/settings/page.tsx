@@ -83,22 +83,25 @@ export default async function SettingsPage({
         <p className="mt-1 text-sm text-[var(--muted)]">
           Current: {user.email}. Confirm the change from your inbox.
         </p>
-        <form action={updateEmail} className="mt-4 space-y-3">
+        <form action={updateEmail} className="mt-4 space-y-3" autoComplete="off">
           <label className="block space-y-2 text-sm">
             <span className="text-[var(--muted)]">New email</span>
             <input
               className="field"
               type="email"
-              name="email"
+              name="new_email"
               required
-              autoComplete="email"
+              autoComplete="off"
+              data-1p-ignore
+              data-lpignore="true"
+              data-bwignore
             />
           </label>
           <label className="block space-y-2 text-sm">
             <span className="text-[var(--muted)]">Account password</span>
             <PasswordInput
-              name="password"
-              autoComplete="current-password"
+              name="account_password"
+              autoComplete="off"
               required
             />
           </label>
@@ -119,7 +122,7 @@ export default async function SettingsPage({
           Permanently removes your profile, Strava connection, group
           memberships, and any groups you own. This cannot be undone.
         </p>
-        <form action={deleteAccount} className="mt-4 space-y-3">
+        <form action={deleteAccount} className="mt-4 space-y-3" autoComplete="off">
           <label className="block space-y-2 text-sm">
             <span className="text-[var(--muted)]">
               Type <span className="font-semibold text-red-200">DELETE</span>{" "}
@@ -132,6 +135,9 @@ export default async function SettingsPage({
               autoComplete="off"
               autoCapitalize="characters"
               spellCheck={false}
+              data-1p-ignore
+              data-lpignore="true"
+              data-bwignore
               required
               pattern="DELETE"
               title="Type DELETE in all caps"
@@ -142,8 +148,8 @@ export default async function SettingsPage({
           <label className="block space-y-2 text-sm">
             <span className="text-[var(--muted)]">Account password</span>
             <PasswordInput
-              name="password"
-              autoComplete="current-password"
+              name="account_password"
+              autoComplete="off"
               required
             />
           </label>

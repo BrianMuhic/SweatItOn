@@ -20,6 +20,7 @@ export function PasswordInput({
   className?: string;
 }) {
   const [visible, setVisible] = useState(false);
+  const ignoreManagers = autoComplete === "off";
 
   return (
     <div className="relative">
@@ -32,6 +33,9 @@ export function PasswordInput({
         required={required}
         defaultValue={defaultValue}
         autoComplete={autoComplete}
+        data-1p-ignore={ignoreManagers || undefined}
+        data-lpignore={ignoreManagers ? "true" : undefined}
+        data-bwignore={ignoreManagers || undefined}
       />
       <button
         type="button"
