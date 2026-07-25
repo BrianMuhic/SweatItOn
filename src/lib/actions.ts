@@ -203,13 +203,16 @@ export async function joinPublicGroup(groupId: string) {
     throw new Error("Group is private — use the password join form");
   }
 
-  const { error } = await supabase.from("group_members").upsert({
+  // Use insert (not upsert): upsert needs an UPDATE RLS policy and can fail with
+  // "new row violates row-level security policy" for first-time joiners.
+  const { error } = await supabase.from("group_members").insert({
     group_id: groupId,
     user_id: user.id,
     role: "member",
   });
 
-  if (error) throw error;
+  // 23505 = already a member (unique on group_id, user_id)
+  if (error && error.code !== "23505") throw error;
   revalidatePath(`/groups/${groupId}`);
   redirect(`/groups/${groupId}`);
 }
@@ -241,13 +244,13 @@ export async function joinPrivateGroup(formData: FormData) {
     redirect(`/groups/${groupId}?error=${encodeURIComponent("Incorrect password")}`);
   }
 
-  const { error } = await supabase.from("group_members").upsert({
+  const { error } = await supabase.from("group_members").insert({
     group_id: groupId,
     user_id: user.id,
     role: "member",
   });
 
-  if (error) {
+  if (error && error.code !== "23505") {
     redirect(`/groups/${groupId}?error=${encodeURIComponent(error.message)}`);
   }
   revalidatePath(`/groups/${groupId}`);

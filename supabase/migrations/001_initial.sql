@@ -196,7 +196,10 @@ $$;
 
 create policy "Members can view membership of their groups"
   on public.group_members for select to authenticated
-  using (public.is_group_member(group_id, auth.uid()));
+  using (
+    user_id = auth.uid()
+    or public.is_group_member(group_id, auth.uid())
+  );
 
 create policy "Users can join groups"
   on public.group_members for insert to authenticated
