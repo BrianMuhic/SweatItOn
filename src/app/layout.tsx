@@ -15,7 +15,7 @@ const body = Manrope({
 });
 
 export const metadata: Metadata = {
-  title: "SweatItOn — Compete with friends",
+  title: "SWEAT IT ON — Compete with friends",
   description:
     "Rival your friends on calories burned and miles walked or run. Sync Apple Watch or Garmin through Strava.",
 };

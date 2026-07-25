@@ -13,7 +13,7 @@ export async function SiteNav() {
         href={user ? "/dashboard" : "/"}
         className="font-[family-name:var(--font-display)] text-2xl tracking-wide text-[var(--text)]"
       >
-        SweatItOn
+        SWEAT IT ON
       </Link>
       <nav className="flex items-center gap-3 text-sm">
         {user ? (

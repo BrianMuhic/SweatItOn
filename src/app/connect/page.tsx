@@ -32,7 +32,7 @@ export default async function ConnectPage({
         Link Strava
       </h1>
       <p className="mt-3 text-[var(--muted)]">
-        One connection powers Apple Watch and Garmin. SweatItOn reads Run and
+        One connection powers Apple Watch and Garmin. SWEAT IT ON reads Run and
         Walk activities for calories, miles, and pace.
       </p>
 
@@ -80,7 +80,7 @@ export default async function ConnectPage({
           </h2>
           <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm text-[var(--muted)]">
             <li>In Garmin Connect, enable upload to Strava.</li>
-            <li>Connect the same Strava account to SweatItOn.</li>
+            <li>Connect the same Strava account to SWEAT IT ON.</li>
             <li>After your next walk or run syncs, hit Sync now.</li>
           </ol>
         </article>

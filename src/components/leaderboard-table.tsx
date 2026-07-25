@@ -47,7 +47,7 @@ export function LeaderboardTable({ rows }: { rows: LeaderboardRow[] }) {
       {winner && winner.calories > 0 && sort === "calories" ? (
         <div className="winner-banner relative overflow-hidden rounded-2xl border border-[var(--accent)]/40 bg-gradient-to-br from-[var(--accent)]/20 to-transparent px-5 py-4">
           <p className="font-[family-name:var(--font-display)] text-xs uppercase tracking-[0.2em] text-[var(--accent)]">
-            SweatItOn winner
+            SWEAT IT ON winner
           </p>
           <p className="mt-1 text-2xl font-semibold text-[var(--text)]">
             <span aria-hidden>👑 </span>

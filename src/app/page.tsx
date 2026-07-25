@@ -9,7 +9,7 @@ export default function HomePage() {
           Friend fitness rivalries
         </p>
         <h1 className="hero-brand font-[family-name:var(--font-display)] text-[clamp(4.5rem,16vw,9rem)] leading-[0.85] text-[var(--text)]">
-          SweatItOn
+          SWEAT IT ON
         </h1>
         <p className="hero-copy mt-5 max-w-xl text-lg text-[var(--muted)] md:text-xl">
           Connect Strava once. Crown the rival who burns the most calories —
@@ -35,7 +35,7 @@ export default function HomePage() {
         {[
           {
             title: "Calories crown the winner",
-            body: "Whoever burns the most wins the period. That’s the SweatItOn rule.",
+            body: "Whoever burns the most wins the period. That’s the SWEAT IT ON rule.",
           },
           {
             title: "Miles & pace on the board",

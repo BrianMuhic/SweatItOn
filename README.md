@@ -1,4 +1,4 @@
-# SweatItOn
+# SWEAT IT ON
 
 Compete with friends on **calories burned** (the crown) plus walk+run **miles** and average **run/walk pace**. Sync Apple Watch and Garmin through **Strava**.
 
@@ -53,8 +53,8 @@ Periods: **daily**, **weekly** (Mon–Sun), **monthly**.
 
 ## Watch setup for friends
 
-- **Apple Watch:** Strava iOS app + Health permissions, then Connect Strava on SweatItOn
-- **Garmin:** Garmin Connect → upload to Strava, then Connect Strava on SweatItOn
+- **Apple Watch:** Strava iOS app + Health permissions, then Connect Strava on SWEAT IT ON
+- **Garmin:** Garmin Connect → upload to Strava, then Connect Strava on SWEAT IT ON
 
 ## Groups
 
