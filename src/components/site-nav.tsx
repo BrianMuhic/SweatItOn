@@ -24,6 +24,9 @@ export async function SiteNav() {
             <Link href="/connect" className="text-[var(--muted)] hover:text-[var(--text)]">
               Connect
             </Link>
+            <Link href="/settings" className="text-[var(--muted)] hover:text-[var(--text)]">
+              Settings
+            </Link>
             <form action="/auth/signout" method="post">
               <button
                 type="submit"

@@ -8,7 +8,15 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function updateDisplayName(formData: FormData) {
   const name = String(formData.get("display_name") || "").trim();
-  if (!name) throw new Error("Display name required");
+  const next = String(formData.get("next") || "");
+  const toSettings = next === "/settings";
+
+  if (!name) {
+    if (toSettings) {
+      redirect(`/settings?error=${encodeURIComponent("Username required")}`);
+    }
+    throw new Error("Display name required");
+  }
 
   const supabase = await createClient();
   const {
@@ -21,9 +29,106 @@ export async function updateDisplayName(formData: FormData) {
     .update({ display_name: name, updated_at: new Date().toISOString() })
     .eq("id", user.id);
 
-  if (error) throw error;
+  if (error) {
+    if (toSettings) {
+      redirect(`/settings?error=${encodeURIComponent(error.message)}`);
+    }
+    throw error;
+  }
+
   revalidatePath("/dashboard");
   revalidatePath("/connect");
+  revalidatePath("/settings");
+
+  if (toSettings) {
+    redirect(`/settings?success=${encodeURIComponent("Username updated")}`);
+  }
+}
+
+export async function updateEmail(formData: FormData) {
+  const email = String(formData.get("email") || "").trim().toLowerCase();
+  const password = String(formData.get("password") || "");
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  if (!email || !email.includes("@")) {
+    redirect(`/settings?error=${encodeURIComponent("Enter a valid email")}`);
+  }
+
+  if (email === user.email?.toLowerCase()) {
+    redirect(
+      `/settings?error=${encodeURIComponent("That’s already your email")}`,
+    );
+  }
+
+  const { error: authError } = await supabase.auth.signInWithPassword({
+    email: user.email!,
+    password,
+  });
+  if (authError) {
+    redirect(
+      `/settings?error=${encodeURIComponent("Incorrect account password")}`,
+    );
+  }
+
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+  const { error } = await supabase.auth.updateUser(
+    { email },
+    appUrl
+      ? { emailRedirectTo: `${appUrl}/auth/callback?next=/settings` }
+      : undefined,
+  );
+
+  if (error) {
+    redirect(`/settings?error=${encodeURIComponent(error.message)}`);
+  }
+
+  revalidatePath("/settings");
+  redirect(
+    `/settings?success=${encodeURIComponent(
+      "Check your inbox to confirm the new email",
+    )}`,
+  );
+}
+
+export async function deleteAccount(formData: FormData) {
+  const password = String(formData.get("password") || "");
+  const confirm = String(formData.get("confirm") || "").trim();
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  if (confirm !== "DELETE") {
+    redirect(
+      `/settings?error=${encodeURIComponent('Type DELETE to confirm account deletion')}`,
+    );
+  }
+
+  const { error: authError } = await supabase.auth.signInWithPassword({
+    email: user.email!,
+    password,
+  });
+  if (authError) {
+    redirect(
+      `/settings?error=${encodeURIComponent("Incorrect account password")}`,
+    );
+  }
+
+  const admin = createAdminClient();
+  const { error } = await admin.auth.admin.deleteUser(user.id);
+  if (error) {
+    redirect(`/settings?error=${encodeURIComponent(error.message)}`);
+  }
+
+  await supabase.auth.signOut();
+  redirect("/");
 }
 
 export async function createGroup(formData: FormData) {

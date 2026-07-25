@@ -25,7 +25,7 @@ async function SignupForm({
     const displayName = String(formData.get("display_name") || "").trim();
 
     const supabase = await createClient();
-    const { data, error } = await supabase.auth.signUp({
+    const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -36,15 +36,6 @@ async function SignupForm({
 
     if (error) {
       redirect(`/signup?error=${encodeURIComponent(error.message)}`);
-    }
-
-    // If email confirmation is required, no session is returned yet.
-    if (!data.session) {
-      redirect(
-        `/login?error=${encodeURIComponent(
-          "Account created. Confirm your email (or disable Confirm email in Supabase Auth), then log in.",
-        )}`,
-      );
     }
 
     redirect("/connect");

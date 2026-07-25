@@ -64,7 +64,7 @@ export default async function GroupsPage() {
                 {isMember ? (
                   <Link
                     href={`/groups/${group.id}`}
-                    className="rounded-full bg-[var(--lime)] px-4 py-2 text-sm font-bold text-[var(--bg)]"
+                    className="rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-bold text-[var(--bg)]"
                   >
                     Open board
                   </Link>
