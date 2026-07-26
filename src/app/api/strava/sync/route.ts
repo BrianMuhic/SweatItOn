@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { syncUserFromStrava } from "@/lib/strava";
 
+// Detail fetches per activity need headroom beyond the default serverless limit.
+export const maxDuration = 60;
+
 export async function POST() {
   const supabase = await createClient();
   const {

@@ -114,12 +114,54 @@ type StravaActivity = {
   kilojoules?: number;
 };
 
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 function activityCalories(a: StravaActivity): number {
+  // Only trust Strava's calories field (DetailedActivity). Do not convert
+  // kilojoules — that is mechanical work from power data and undercounts the
+  // Cal value shown in the Strava app (e.g. 637 kJ → ~152 vs 400+ Cal).
   if (typeof a.calories === "number" && a.calories > 0) return a.calories;
-  if (typeof a.kilojoules === "number" && a.kilojoules > 0) {
-    return a.kilojoules / 4.184;
-  }
   return 0;
+}
+
+/**
+ * List athlete activities omits `calories`. Fetch each run/walk detail so we
+ * store the same Cal figure Strava shows in the app.
+ */
+async function enrichActivitiesWithCalories(
+  accessToken: string,
+  summaries: StravaActivity[],
+): Promise<StravaActivity[]> {
+  const candidates = summaries.filter((summary) => {
+    const kind = mapStravaType(summary.type, summary.sport_type);
+    return Boolean(kind && summary.distance && summary.distance > 0);
+  });
+
+  const detailed: StravaActivity[] = [];
+
+  for (let i = 0; i < candidates.length; i++) {
+    const summary = candidates[i];
+
+    if (typeof summary.calories === "number" && summary.calories > 0) {
+      detailed.push(summary);
+    } else {
+      try {
+        detailed.push(await fetchActivityById(accessToken, summary.id));
+      } catch {
+        // Keep summary so distance/time still sync; calories may stay 0.
+        detailed.push(summary);
+      }
+    }
+
+    // Stay under Strava's short-term rate limit when syncing many activities.
+    if (i < candidates.length - 1) {
+      await sleep(120);
+    }
+  }
+
+  return detailed;
 }
 
 export async function fetchRecentActivities(
@@ -261,16 +303,13 @@ export async function syncUserFromStrava(userId: string): Promise<{ upserted: nu
   const token = await getValidAccessToken(userId);
   // Last 30 days
   const after = Math.floor(Date.now() / 1000) - 30 * 24 * 60 * 60;
-  const activities = await fetchRecentActivities(token, after);
+  const summaries = await fetchRecentActivities(token, after);
+  const activities = await enrichActivitiesWithCalories(token, summaries);
   return upsertActivitiesForUser(userId, activities);
 }
 
 const CRON_MIN_GAP_MS = 30 * 60 * 1000; // skip if synced in the last 30 minutes
 const CRON_USER_DELAY_MS = 250;
-
-function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
 
 export async function syncAllConnectedUsers(): Promise<{
   synced: number;
