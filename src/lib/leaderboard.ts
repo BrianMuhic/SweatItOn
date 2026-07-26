@@ -19,8 +19,13 @@ export function formatPace(miles: number, movingTimeSec: number): string | null 
   if (miles <= 0 || movingTimeSec <= 0) return null;
   const secPerMile = movingTimeSec / miles;
   if (!Number.isFinite(secPerMile) || secPerMile <= 0) return null;
-  const minutes = Math.floor(secPerMile / 60);
-  const seconds = Math.round(secPerMile % 60);
+  let minutes = Math.floor(secPerMile / 60);
+  let seconds = Math.round(secPerMile % 60);
+  // Rounding can produce 60s (e.g. 8:59.6 → 8:60); roll into the next minute.
+  if (seconds === 60) {
+    minutes += 1;
+    seconds = 0;
+  }
   return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 }
 
