@@ -314,6 +314,64 @@ export async function changeGroupPassword(formData: FormData) {
   redirect(`/groups/${groupId}?success=${encodeURIComponent("Group password updated")}`);
 }
 
+export async function deleteGroup(formData: FormData) {
+  const groupId = String(formData.get("group_id") || "");
+  const confirm = String(formData.get("confirm") || "").trim();
+  const accountPassword = String(
+    formData.get("account_password") || formData.get("password") || "",
+  );
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  if (confirm !== "DELETE") {
+    redirect(
+      `/groups/${groupId}?error=${encodeURIComponent(
+        "Enter DELETE (all caps) in the confirmation box, then your password",
+      )}`,
+    );
+  }
+
+  const admin = createAdminClient();
+  const { data: group } = await admin
+    .from("groups")
+    .select("id, created_by")
+    .eq("id", groupId)
+    .maybeSingle();
+
+  if (!group) {
+    redirect(`/groups?error=${encodeURIComponent("Group not found")}`);
+  }
+  if (group.created_by !== user.id) {
+    redirect(
+      `/groups/${groupId}?error=${encodeURIComponent(
+        "Only the group creator can delete this group",
+      )}`,
+    );
+  }
+
+  const { error: authError } = await supabase.auth.signInWithPassword({
+    email: user.email!,
+    password: accountPassword,
+  });
+  if (authError) {
+    redirect(
+      `/groups/${groupId}?error=${encodeURIComponent("Incorrect account password")}`,
+    );
+  }
+
+  const { error } = await admin.from("groups").delete().eq("id", groupId);
+  if (error) {
+    redirect(`/groups/${groupId}?error=${encodeURIComponent(error.message)}`);
+  }
+
+  revalidatePath("/groups");
+  redirect("/groups");
+}
+
 export async function leaveGroup(groupId: string) {
   const supabase = await createClient();
   const {

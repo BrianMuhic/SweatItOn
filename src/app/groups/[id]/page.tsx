@@ -189,15 +189,20 @@ export default async function GroupDetailPage({
         </p>
       ) : null}
 
-      {group.is_private && group.created_by === user.id ? (
-        <GroupSettings groupId={group.id} />
+      {group.created_by === user.id ? (
+        <GroupSettings groupId={group.id} isPrivate={group.is_private} />
       ) : null}
 
-      <form action={leaveGroup.bind(null, group.id)} className="mt-10">
-        <button type="submit" className="text-sm text-[var(--muted)] hover:text-[var(--accent)]">
-          Leave group
-        </button>
-      </form>
+      {group.created_by !== user.id ? (
+        <form action={leaveGroup.bind(null, group.id)} className="mt-10">
+          <button
+            type="submit"
+            className="text-sm text-[var(--muted)] hover:text-[var(--accent)]"
+          >
+            Leave group
+          </button>
+        </form>
+      ) : null}
     </div>
   );
 }
