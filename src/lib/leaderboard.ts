@@ -1,15 +1,33 @@
-import {
-  endOfDay,
-  endOfMonth,
-  endOfWeek,
-  format,
-  startOfDay,
-  startOfMonth,
-  startOfWeek,
-} from "date-fns";
 import type { DailyStat, LeaderboardRow, Period, Profile } from "@/lib/types";
 
 const METERS_PER_MILE = 1609.344;
+
+/** Calendar TZ for daily/weekly/monthly boards. Vercel runs UTC; activities use Strava local dates. */
+export const APP_TIMEZONE =
+  process.env.APP_TIMEZONE || process.env.NEXT_PUBLIC_APP_TIMEZONE || "America/New_York";
+
+/** YYYY-MM-DD for `date` in `timeZone` (avoids server-UTC day rollover). */
+export function calendarDateInTimeZone(
+  date: Date,
+  timeZone: string = APP_TIMEZONE,
+): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
+}
+
+/** UTC noon on a YYYY-MM-DD calendar day — safe for UTC day-of-week / month math. */
+function utcNoonFromYmd(ymd: string): Date {
+  const [y, m, d] = ymd.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d, 12, 0, 0));
+}
+
+function ymdFromUtc(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
 
 export function metersToMiles(meters: number): number {
   return meters / METERS_PER_MILE;
@@ -40,26 +58,41 @@ export function formatCalories(calories: number): string {
 export function periodRange(
   period: Period,
   now = new Date(),
+  timeZone: string = APP_TIMEZONE,
 ): { start: Date; end: Date; startDate: string; endDate: string } {
-  let start: Date;
-  let end: Date;
+  // Anchor on the app calendar day (not the server's UTC day) so evening
+  // syncs still land in "today" for US users when the app runs on Vercel UTC.
+  const todayYmd = calendarDateInTimeZone(now, timeZone);
+  const anchor = utcNoonFromYmd(todayYmd);
+
+  let startDate: string;
+  let endDate: string;
 
   if (period === "daily") {
-    start = startOfDay(now);
-    end = endOfDay(now);
+    startDate = todayYmd;
+    endDate = todayYmd;
   } else if (period === "weekly") {
-    start = startOfWeek(now, { weekStartsOn: 1 });
-    end = endOfWeek(now, { weekStartsOn: 1 });
+    // Monday–Sunday in the app timezone calendar
+    const utcDay = anchor.getUTCDay(); // 0=Sun … 6=Sat
+    const daysFromMonday = utcDay === 0 ? 6 : utcDay - 1;
+    const start = new Date(anchor);
+    start.setUTCDate(start.getUTCDate() - daysFromMonday);
+    const end = new Date(start);
+    end.setUTCDate(end.getUTCDate() + 6);
+    startDate = ymdFromUtc(start);
+    endDate = ymdFromUtc(end);
   } else {
-    start = startOfMonth(now);
-    end = endOfMonth(now);
+    const [y, m] = todayYmd.split("-").map(Number);
+    startDate = `${y}-${String(m).padStart(2, "0")}-01`;
+    const lastDay = new Date(Date.UTC(y, m, 0)).getUTCDate();
+    endDate = `${y}-${String(m).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
   }
 
   return {
-    start,
-    end,
-    startDate: format(start, "yyyy-MM-dd"),
-    endDate: format(end, "yyyy-MM-dd"),
+    start: utcNoonFromYmd(startDate),
+    end: utcNoonFromYmd(endDate),
+    startDate,
+    endDate,
   };
 }
 
