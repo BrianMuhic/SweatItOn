@@ -299,17 +299,119 @@ async function recomputeDailyStatsJs(userId: string, date: string) {
   });
 }
 
-export async function syncUserFromStrava(userId: string): Promise<{ upserted: number }> {
+/**
+ * Activity IDs already stored for this user — skip Strava detail fetches
+ * and re-upserts for these to stay under rate limits.
+ */
+async function getExistingActivityIds(
+  userId: string,
+  activityIds: number[],
+): Promise<Set<number>> {
+  if (!activityIds.length) return new Set();
+
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from("activities")
+    .select("id")
+    .eq("user_id", userId)
+    .in("id", activityIds);
+
+  return new Set((data || []).map((row) => Number(row.id)));
+}
+
+export async function syncUserFromStrava(userId: string): Promise<{
+  upserted: number;
+  skippedExisting: number;
+}> {
   const token = await getValidAccessToken(userId);
   // Last 30 days
   const after = Math.floor(Date.now() / 1000) - 30 * 24 * 60 * 60;
   const summaries = await fetchRecentActivities(token, after);
-  const activities = await enrichActivitiesWithCalories(token, summaries);
-  return upsertActivitiesForUser(userId, activities);
+
+  const existingIds = await getExistingActivityIds(
+    userId,
+    summaries.map((s) => s.id),
+  );
+  const newSummaries = summaries.filter((s) => !existingIds.has(s.id));
+  const skippedExisting = summaries.length - newSummaries.length;
+
+  if (!newSummaries.length) {
+    const admin = createAdminClient();
+    await admin
+      .from("profiles")
+      .update({ last_synced_at: new Date().toISOString() })
+      .eq("id", userId);
+    return { upserted: 0, skippedExisting };
+  }
+
+  const activities = await enrichActivitiesWithCalories(token, newSummaries);
+  const result = await upsertActivitiesForUser(userId, activities);
+  return { upserted: result.upserted, skippedExisting };
 }
 
 const CRON_MIN_GAP_MS = 30 * 60 * 1000; // skip if synced in the last 30 minutes
 const CRON_USER_DELAY_MS = 250;
+
+export async function syncGroupFromStrava(groupId: string): Promise<{
+  synced: number;
+  skippedNoStrava: number;
+  failed: number;
+  upserted: number;
+  skippedExisting: number;
+  errors: { userId: string; message: string }[];
+}> {
+  const admin = createAdminClient();
+
+  const { data: members, error: membersError } = await admin
+    .from("group_members")
+    .select("user_id")
+    .eq("group_id", groupId);
+
+  if (membersError) throw membersError;
+
+  const memberIds = (members || []).map((m) => m.user_id);
+  const result = {
+    synced: 0,
+    skippedNoStrava: 0,
+    failed: 0,
+    upserted: 0,
+    skippedExisting: 0,
+    errors: [] as { userId: string; message: string }[],
+  };
+
+  if (!memberIds.length) return result;
+
+  const { data: tokens } = await admin
+    .from("strava_tokens")
+    .select("user_id")
+    .in("user_id", memberIds);
+
+  const connected = new Set((tokens || []).map((t) => t.user_id));
+  const toSync = memberIds.filter((id) => connected.has(id));
+  result.skippedNoStrava = memberIds.length - toSync.length;
+
+  for (let i = 0; i < toSync.length; i++) {
+    const userId = toSync[i];
+    try {
+      const syncResult = await syncUserFromStrava(userId);
+      result.synced++;
+      result.upserted += syncResult.upserted;
+      result.skippedExisting += syncResult.skippedExisting;
+    } catch (e) {
+      result.failed++;
+      result.errors.push({
+        userId,
+        message: e instanceof Error ? e.message : "Sync failed",
+      });
+    }
+
+    if (i < toSync.length - 1) {
+      await sleep(CRON_USER_DELAY_MS);
+    }
+  }
+
+  return result;
+}
 
 export async function syncAllConnectedUsers(): Promise<{
   synced: number;

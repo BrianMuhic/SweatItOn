@@ -154,16 +154,15 @@ export default async function GroupDetailPage({
         </div>
         <div className="flex flex-col items-end gap-3">
           <PeriodTabs groupId={group.id} period={period} />
-          {me?.strava_athlete_id ? (
-            <SyncButton />
-          ) : (
+          <SyncButton groupId={group.id} />
+          {!me?.strava_athlete_id ? (
             <Link
               href="/connect"
-              className="rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-bold text-[var(--bg)]"
+              className="text-xs text-[var(--muted)] underline-offset-2 hover:underline"
             >
-              Connect Strava to sync
+              Connect your Strava
             </Link>
-          )}
+          ) : null}
         </div>
       </div>
 
